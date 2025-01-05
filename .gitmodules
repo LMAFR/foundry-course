@@ -7,3 +7,6 @@
 [submodule "foundry-f23/html-fund-me-cu"]
 	path = foundry-f23/html-fund-me-cus
 	url = https://github.com/Cyfrin/html-fund-me-cu
+[submodule "foundry-f23/foundry-fund-me-f23/lib/forge-std"]
+	path = foundry-f23/foundry-fund-me-f23/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
