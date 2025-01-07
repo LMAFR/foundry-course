@@ -3,8 +3,8 @@
 pragma solidity ^0.8.18;
 
 import {Test, console} from "forge-std/Test.sol";
-import {FundMe} from "../src/FundMe.sol";
-import {DeployFundMe} from "../script/DeployFundMe.s.sol";
+import {FundMe} from "../../src/FundMe.sol";
+import {DeployFundMe} from "../../script/DeployFundMe.s.sol";
 // import {DSTest} from "ds-test/test.sol";
 
 contract FundMeTest is Test {
@@ -16,6 +16,8 @@ contract FundMeTest is Test {
     uint256 constant SEND_VALUE = 0.1 ether; //1e17
     // We have to add some money for this new address so it can fund our contract later
     uint256 constant STARTING_BALANCE = 10 ether;
+    // Set a default gas price
+    uint256 constant GAS_PRICE = 1;
 
     // Deploy our contract into this test contract
     // setUp() function always runs first than other test functions we will build below
@@ -121,11 +123,66 @@ contract FundMeTest is Test {
         uint256 startingFundMeBalance = address(fundMe).balance;
         uint256 startingOwnerBalance = fundMe.getOwner().balance;
         // Act
+        // gasleft() is a built in function that gives us the gas left in a transaction
+        uint256 gasStart = gasleft(); // For example, 1000
+        // Set gas price for withdraw operation
+        vm.txGasPrice(GAS_PRICE);
         // vm.start/stopPrank are similar to start/stopBroadcast. They will take the USER passed as argument to all the code between
         // start and stop functions. We use it here, but as there is only 1 line of code inside, we could also use vm.prank() directly
         vm.startPrank(fundMe.getOwner());
         fundMe.withdraw();
         vm.stopPrank();
+
+        uint256 gasEnd = gasleft(); // For example, 200
+        // Get the gas used in the operation and calculate how many it will cost us
+        // tx.gasprice give us the current gas price
+        uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice; // 800 * current_price
+        console.log(gasUsed);
+
+        // Assert
+        // We could have used in previous tests, assert instead of assertEq. We will use the following lines as example:
+        // After withdraw, fundMe contract should has no money in its balance
+        assert(address(fundMe).balance == 0);
+        // After withdraw, all the money that we originally had in fundMe, should have passed to the owner of fundMe:
+        assert(
+            fundMe.getOwner().balance ==
+                startingFundMeBalance + startingOwnerBalance
+        );
+    }
+
+    function testWithdrawWithASeveralFundersCheaper() public funded {
+        // Arrange
+        // We will use uint160 because those are the integers we can use to create a address using address(n). It is that way because
+        // that 160 is related to the number of bytes that an account has.
+        uint160 numberOfFunders = 10;
+        // It is not recommended to start 0 because usually are sanity tests and other issues that can make your test fail if you
+        // operate on address(0) (we are going to use this index to create addresses in a for loop)
+        uint160 startingFunderIndex = 1;
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            // hoax is a function that does, at the same time, vm.deal and vm.prank:
+            hoax(address(i), SEND_VALUE);
+            fundMe.fund{value: SEND_VALUE}();
+        }
+
+        uint256 startingFundMeBalance = address(fundMe).balance;
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        // Act
+        // gasleft() is a built in function that gives us the gas left in a transaction
+        uint256 gasStart = gasleft(); // For example, 1000
+        // Set gas price for withdraw operation
+        vm.txGasPrice(GAS_PRICE);
+        // vm.start/stopPrank are similar to start/stopBroadcast. They will take the USER passed as argument to all the code between
+        // start and stop functions. We use it here, but as there is only 1 line of code inside, we could also use vm.prank() directly
+        vm.startPrank(fundMe.getOwner());
+        fundMe.cheaperWithdraw();
+        vm.stopPrank();
+
+        uint256 gasEnd = gasleft(); // For example, 200
+        // Get the gas used in the operation and calculate how many it will cost us
+        // tx.gasprice give us the current gas price
+        uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice; // 800 * current_price
+        console.log(gasUsed);
+
         // Assert
         // We could have used in previous tests, assert instead of assertEq. We will use the following lines as example:
         // After withdraw, fundMe contract should has no money in its balance

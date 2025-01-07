@@ -4,6 +4,10 @@ out = "out"
 libs = ["lib"]
 remappings = [
     "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",
+    "foundry-devops/=lib/foundry-devops/",
 ]
+# The line below allow foundry to run commands and bash scripts directly in our machine and we should be careful with it 
+# Therefore, remove or comment after use it!
+# ffi = true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
