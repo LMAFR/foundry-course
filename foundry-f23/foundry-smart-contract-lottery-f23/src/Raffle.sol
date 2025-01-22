@@ -108,11 +108,41 @@ contract Raffle is VRFConsumerBaseV2Plus {
         emit RaffledEntered(msg.sender);
     }
 
-    function pickWinner() external {
-        // Check it enough time has passed
-        if ((block.timestamp - s_lastTimeStamp) < i_interval) {
+    // We will ignore the calldata that could have been passed as input and memory data that could have been returned
+    // unkeepNeeded is a boolean value that tell us if we should automatically pick the winner 
+    /**
+     * @dev This is the function that the Chainlink nodes will call to see
+     * if the lottery is ready to have a winner picked.
+     * The following should be true in order for unkeepNeeded to be true:
+     * 1. The time interval has passed between raffle runs
+     * 2. The lottery is open
+     * 3. The contract has ETH (has players)
+     * 4. Implicitly, your subscription has LINK
+     * @param - ignored 
+     * @return unkeepNeeded - true if it's time to restart the lottery
+     * @return 
+     */
+    function checkUnkeep(bytes memory /*checkData*/) public view returns(bool unkeepNeeded, bytes memory /* performData */) {
+        // As we defined unkeepNeeded in the return, we do not have to define it here. It will be defined and set to false by default.
+        // Therefore, we can just set it to true if it meets the conditions we want it to.
+        bool timeHasPassed = ((block.timestamp -s_lastTimeStamp) >= i_interval);
+        bool isOpen = s_raffleState == RaffleState.OPEN;
+        bool hasBalance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+        unkeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers;
+        // The "" below means null bytes memory. It also can be written as hex"0x0" or hex"".
+        return (unkeepNeeded, "");
+    }
+
+    // Previously called pickWinner:
+    function performUnkeep() external {
+        
+        // Check it enough time has passed 
+        (bool unkeepNeeded, ) = checkUnkeep("");
+        if (!unkeepNeeded) {
             revert();
         }
+
         s_raffleState = RaffleState.CALCULATING;
         // We have access to s_vrfCoordinator because our class inherits from VRFConsumerBaseV2Plus
         VRFV2PlusClient.RandomWordsRequest memory request =VRFV2PlusClient.RandomWordsRequest({
