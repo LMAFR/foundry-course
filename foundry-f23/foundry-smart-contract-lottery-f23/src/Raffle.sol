@@ -41,6 +41,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__SendMoreToEnterRaffle();
     error Raffle__TransferFailed();
     error Raffle__RaffleNotOpen();
+    error Raffle__UnkeepNotNeeded(uint256 balance, uint256 playersLength, uint256 raffleState);
 
     /* Type Variables */
     enum RaffleState {
@@ -140,7 +141,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         // Check it enough time has passed 
         (bool unkeepNeeded, ) = checkUnkeep("");
         if (!unkeepNeeded) {
-            revert();
+            revert Raffle__UnkeepNotNeeded(address(this).balance, s_players.length, uint256(s_raffleState));
         }
 
         s_raffleState = RaffleState.CALCULATING;
