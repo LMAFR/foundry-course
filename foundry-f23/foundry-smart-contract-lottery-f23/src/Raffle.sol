@@ -154,7 +154,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
             numWords: NUM_WORDS,
             extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: true})) // new parameter
             });
-        uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
+        s_vrfCoordinator.requestRandomWords(request);
     }
 
     // CEI: Checks, Effects, Interactions Patterns
@@ -164,7 +164,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     // to let developer know that he will have to add override{} when he defines this function in his contract.
     // This function will contain the process we want to do after getting the randomWords, in this case, it will be to take the randomNumber from 
     // hexadecimal format of the random word and use it to determine the winner of the Raffle and transfer the money to him.
-    function fulfillRandomWords( uint256 requestId, uint256[] calldata randomWords) internal override{
+    function fulfillRandomWords( uint256 /*requestId*/, uint256[] calldata randomWords) internal override{
         // Checks
         // Requires (conditionals). Example: the if at the beginning of pickWinner function
         // Start by checks is done because it is the most gas efficient way to code (check if we want to revert before doing anything else)
